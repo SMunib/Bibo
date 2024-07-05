@@ -1,6 +1,5 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
-// const user = require('../models/user');
 const configPath = path.resolve(__dirname,'..','config','config.json')
 const config = require(configPath).db;
 
