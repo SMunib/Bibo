@@ -14,7 +14,7 @@ const upload = multer({
     fileFilter: (req,file,cb) => {
         checkFileType(file,cb);
     }
-}).single('displayPicture');
+});
 
 function checkFileType(file,cb) {
     const filetypes = /jpeg|jpg|png|gif/;
