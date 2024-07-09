@@ -1,5 +1,6 @@
 const Product = require('../models/product');
 const User = require('../models/user');
+const Token = require('../models/tokens');
 
 const defineAssociations = async () => {
     Product.belongsTo(User,{
@@ -13,6 +14,16 @@ const defineAssociations = async () => {
         sourceKey:'id',
         as: 'products',
     });
+
+    User.hasOne(Token, {
+        foreignKey: 'userId',
+        as: 'token'
+    });
+
+    Token.belongsTo(User, {
+        foreignKey: 'userId',
+        as: 'user'
+    });
 };
 
-module.exports = defineAssociations
+module.exports = defineAssociations;

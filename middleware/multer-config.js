@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 
+
 const storage = multer.diskStorage({
     destination: './uploads/',
     filename: (req,file,cb) => {
@@ -14,7 +15,7 @@ const upload = multer({
     fileFilter: (req,file,cb) => {
         checkFileType(file,cb);
     }
-});
+}).any('displayPicture');
 
 function checkFileType(file,cb) {
     const filetypes = /jpeg|jpg|png|gif/;

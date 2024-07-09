@@ -2,56 +2,66 @@ const express = require("express");
 const router = express.Router();
 const validate = require("../middleware/validation").validate;
 const Product = require("../models/product");
-const upload = require("../middleware/multer-config").single("displayPicture");
 const User = require("../models/user");
 const verify = require("../middleware/auth");
+const fs = require("fs");
 
-router.route("/add").post(verify,upload,validate, async (req, res) => {
+router
+  .route("/add")
+  .post(verify, validate, async (req, res) => {
   try {
-    const displayPicture = req.file ? req.file.path : null;
-    const { name, description, price, category, quantity } = req.body;
+    if (req.files && req.files.length > 0) {
+      const displayPicture = req.files[0];
+      const { name, description, price, category, quantity } = req.body;
+      const owner = await User.findByPk(req.user.id);
+      if (!owner) return res.status(400).json({ error: "Owner not found" });
 
-    const owner = await User.findByPk(req.user.id);
-    if (!owner) return res.status(400).json({ error: "Owner not found" });
+      const ownerid = req.user.id;
+      const path = `uploads/${Date.now() + displayPicture.originalname}`;
+      fs.writeFileSync(path, displayPicture.buffer);
 
-    const ownerid = req.user.id;
-
-    const product = await Product.create({
-      name,
-      description,
-      price,
-      category,
-      quantity,
-      displayPicture,
-      ownerid,
-    });
-    return res.status(201).json(product);
+      const product = await Product.create({
+        name,
+        description,
+        price,
+        category,
+        quantity,
+        displayPicture: path,
+        ownerid,
+      });
+      return res.status(201).json(product);
+    } else {
+      return res.status(400).json({ error: "File not uploaded" });
+    }
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: "Error creating product" });
   }
 });
 
-router.route("/remove/:id").patch(verify, async (req, res) => {
+router
+  .route("/remove/:id")
+  .patch(verify, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product)
       return res.status(404).send("Specified product does not exist");
-    
-    await product.update({ isHidden : true});
+    await product.update({ isHidden: true });
 
-    return res.status(200).json({ message:"Product removed" ,product});
+    return res.status(200).json({ message: "Product removed", product });
   } catch (err) {
     return res.status(500).send("Error deleting product");
   }
 });
 
-router.route("/display").get(verify, async (req, res) => {
+router
+  .route("/display")
+  .get(verify, async (req, res) => {
   try {
     const products = await Product.findAll({
       where: {
-        isHidden: false
-      }
+        isHidden: false,
+      },
     });
     if (!products) return res.status(404).send("There are no products");
     return res.status(200).send(products);
@@ -60,7 +70,9 @@ router.route("/display").get(verify, async (req, res) => {
   }
 });
 
-router.route("/edit/:id").patch(verify,upload,validate, async (req, res) => {
+router
+  .route("/edit/:id")
+  .patch(verify, validate, async (req, res) => {
   const productid = req.params.id;
   try {
     let product = await Product.findByPk(productid);
@@ -77,10 +89,14 @@ router.route("/edit/:id").patch(verify,upload,validate, async (req, res) => {
       ...(quantity && { quantity }),
     };
 
-    if (req.file) {
-      updatedProductData.displayPicture = req.file.path;
+    if (req.files && req.files.length > 0) {
+      const displayPicture = req.files[0];
+      const path = `uploads/${Date.now() + displayPicture.originalname}`;
+      fs.writeFileSync(path, displayPicture.buffer);
+      await product.update({
+        displayPicture:path
+      });
     }
-    await product.update(updatedProductData);
     res.status(200).json(product);
   } catch (err) {
     console.log(err);

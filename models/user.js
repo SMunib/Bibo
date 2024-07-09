@@ -1,6 +1,7 @@
 const { DataTypes} = require('sequelize');
 const { sequelize } = require('../startup/db');
 const jwt = require('jsonwebtoken');
+const Token = require('./tokens');
 
 const User = sequelize.define('User', {
     companyName : {
@@ -55,10 +56,11 @@ const User = sequelize.define('User', {
     }  
 });
 
-User.prototype.generateToken = function(){
-    const jwtkey = process.env.JWT_SECRET_KEY;
-    console.log(jwtkey);
+User.prototype.generateToken = async function(){
+    await Token.destroy({ where: {userId:this.id}});
+    const jwtkey = process.env.jwtSecretKey;
     const token = jwt.sign({id: this.id},jwtkey,{expiresIn: '1h'});
+    await Token.create({key: token,userId: this.id});
     return token;
 }
 
