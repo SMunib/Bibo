@@ -1,7 +1,6 @@
 const Joi = require("joi");
-const fs = require("fs");
-const path = require("path");
-const Product = require('../models/product');
+// const fs = require("fs");
+// const path = require("path");
 
 async function validateProduct(Product) {
   const productSchema = Joi.object({
@@ -13,7 +12,6 @@ async function validateProduct(Product) {
     inStock: Joi.boolean(),
   });
   try {
-    // console.log("here");
     await productSchema.validateAsync(Product, { abortEarly: false });
     console.log("Validation passed(PRODUCT)");
     return { error: null };

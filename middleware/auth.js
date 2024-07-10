@@ -5,7 +5,7 @@ const Token = require('../models/tokens');
 async function verifyToken(req, res, next) {
   const token = req.header("x-auth-token");
   if (!token) return res.status(401).send("Access denied, token not provided");
-  // console.log(token);
+  //en); console.log(tok
   try {
     const decoded = jwt.verify(token, key);
     const tokenRecord = await Token.findOne({where: {key: token}});

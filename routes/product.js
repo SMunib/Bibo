@@ -5,10 +5,9 @@ const Product = require("../models/product");
 const User = require("../models/user");
 const verify = require("../middleware/auth");
 const fs = require("fs");
+const baseUrl = `http://localhost:${process.env.PORT}/`;
 
-router
-  .route("/add")
-  .post(verify, validate, async (req, res) => {
+router.route("/add").post(verify, validate, async (req, res) => {
   try {
     if (req.files && req.files.length > 0) {
       const displayPicture = req.files[0];
@@ -29,7 +28,11 @@ router
         displayPicture: path,
         ownerid,
       });
-      return res.status(201).json(product);
+      const productData = {
+        ...product.toJSON(),
+        displayPicture: `${baseUrl}${path}`,
+      };
+      return res.status(201).json(productData);
     } else {
       return res.status(400).json({ error: "File not uploaded" });
     }
@@ -39,40 +42,37 @@ router
   }
 });
 
-router
-  .route("/remove/:id")
-  .patch(verify, async (req, res) => {
+router.route("/remove/:id").patch(verify, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product)
       return res.status(404).send("Specified product does not exist");
-    await product.update({ isHidden: true });
-
+    await product.update({ deleteStatus: Date.now() });
     return res.status(200).json({ message: "Product removed", product });
   } catch (err) {
     return res.status(500).send("Error deleting product");
   }
 });
 
-router
-  .route("/display")
-  .get(verify, async (req, res) => {
+router.route("/display").get(verify, async (req, res) => {
   try {
     const products = await Product.findAll({
       where: {
-        isHidden: false,
+        deleteStatus: null,
       },
     });
     if (!products) return res.status(404).send("There are no products");
-    return res.status(200).send(products);
+    const productData = products.map((product) => ({
+      ...product.toJSON(),
+      displayPicture: `${baseUrl}${product.displayPicture}`,
+    }));
+    return res.status(200).json(productData);
   } catch (err) {
     return res.status(500).send("Error displaying products");
   }
 });
 
-router
-  .route("/edit/:id")
-  .patch(verify, validate, async (req, res) => {
+router.route("/edit/:id").patch(verify, validate, async (req, res) => {
   const productid = req.params.id;
   try {
     let product = await Product.findByPk(productid);
@@ -88,16 +88,26 @@ router
       ...(category && { category }),
       ...(quantity && { quantity }),
     };
+    await product.update(updatedProductData);
 
     if (req.files && req.files.length > 0) {
       const displayPicture = req.files[0];
       const path = `uploads/${Date.now() + displayPicture.originalname}`;
       fs.writeFileSync(path, displayPicture.buffer);
       await product.update({
-        displayPicture:path
+        displayPicture: path,
       });
+      const productData = {
+        ...product.toJSON(),
+        displayPicture: `${baseUrl}${path}`,
+      };
+      return res.status(200).json(productData);
     }
-    res.status(200).json(product);
+    const productData = {
+      ...product.toJSON(),
+      displayPicture: `${baseUrl}${product.displayPicture}`,
+    };
+    return res.status(200).json(productData);
   } catch (err) {
     console.log(err);
     return res.status(500).send("Unable to edit product");

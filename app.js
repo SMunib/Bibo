@@ -1,30 +1,33 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const {sequelize,syncDB,testConnection} = require('./startup/db');
-const User = require('./models/user');
-const Product =  require('./models/product');
-const Token = require('./models/tokens');
-const defineAssociations = require('./connect/Association');
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
-const multer = require('multer');
+const multer = require("multer");
 const upload = multer();
 
-async function initialize(){
-    await testConnection();
-    await defineAssociations();
-    await syncDB();
+const defineAssociations = require("./connect/Association");
+const { sequelize, syncDB, testConnection } = require("./startup/db");
+const setupRoutes = require("./startup/routes");
 
-    app.use(express.json());
-    app.use(express.urlencoded({extended:true}));
-    app.use(upload.any());
+const User = require("./models/user");
+const Product = require("./models/product");
+const Token = require("./models/tokens");
+const Purchase = require("./models/purchases");
 
-    app.use('/uploads',express.static('uploads'));
+async function initialize() {
+  await testConnection();
+  await defineAssociations();
+  await syncDB();
 
-    require('./startup/routes')(app);
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(upload.any());
+  app.use("/uploads", express.static("uploads"));
 
-    const port = process.env.port || 3000;
-    app.listen(port,() => console.log(`server is running on port: ${port}`));
+  setupRoutes(app);
+
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`server is running on port: ${port}`));
 }
 
 initialize();
