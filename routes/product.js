@@ -4,8 +4,8 @@ const validate = require("../middleware/validation").validate;
 const Product = require("../models/product");
 const User = require("../models/user");
 const verify = require("../middleware/auth");
-const fs = require("fs");
-const baseUrl = `http://localhost:${process.env.PORT}/`;
+const saveFile = require("../utils/fileHandler");
+const formatProductData  = require("../utils/urlHandler");
 
 router.route("/add").post(verify, validate, async (req, res) => {
   try {
@@ -16,8 +16,7 @@ router.route("/add").post(verify, validate, async (req, res) => {
       if (!owner) return res.status(400).json({ error: "Owner not found" });
 
       const ownerid = req.user.id;
-      const path = `uploads/${Date.now() + displayPicture.originalname}`;
-      fs.writeFileSync(path, displayPicture.buffer);
+      const path = saveFile(displayPicture);
 
       const product = await Product.create({
         name,
@@ -28,11 +27,8 @@ router.route("/add").post(verify, validate, async (req, res) => {
         displayPicture: path,
         ownerid,
       });
-      const productData = {
-        ...product.toJSON(),
-        displayPicture: `${baseUrl}${path}`,
-      };
-      return res.status(201).json(productData);
+      const formattedProduct = formatProductData(product);
+      return res.status(201).json(formattedProduct);
     } else {
       return res.status(400).json({ error: "File not uploaded" });
     }
@@ -62,11 +58,9 @@ router.route("/display").get(verify, async (req, res) => {
       },
     });
     if (!products) return res.status(404).send("There are no products");
-    const productData = products.map((product) => ({
-      ...product.toJSON(),
-      displayPicture: `${baseUrl}${product.displayPicture}`,
-    }));
-    return res.status(200).json(productData);
+
+    const formattedProducts = products.map(formatProductData);
+    return res.status(200).json(formattedProducts);
   } catch (err) {
     return res.status(500).send("Error displaying products");
   }
@@ -92,22 +86,13 @@ router.route("/edit/:id").patch(verify, validate, async (req, res) => {
 
     if (req.files && req.files.length > 0) {
       const displayPicture = req.files[0];
-      const path = `uploads/${Date.now() + displayPicture.originalname}`;
-      fs.writeFileSync(path, displayPicture.buffer);
+      const path = saveFile(displayPicture);
       await product.update({
         displayPicture: path,
       });
-      const productData = {
-        ...product.toJSON(),
-        displayPicture: `${baseUrl}${path}`,
-      };
-      return res.status(200).json(productData);
+      return res.status(200).json(formatProductData(product));
     }
-    const productData = {
-      ...product.toJSON(),
-      displayPicture: `${baseUrl}${product.displayPicture}`,
-    };
-    return res.status(200).json(productData);
+    return res.status(200).json(formatProductData(product));
   } catch (err) {
     console.log(err);
     return res.status(500).send("Unable to edit product");

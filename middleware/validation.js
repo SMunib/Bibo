@@ -1,6 +1,4 @@
 const Joi = require("joi");
-// const fs = require("fs");
-// const path = require("path");
 
 async function validateProduct(Product) {
   const productSchema = Joi.object({
@@ -24,14 +22,6 @@ function validationMiddleware(req, res, next) {
   validateProduct(req.body)
     .then((result) => {
       if (result.error) {
-        // if (req.file) {
-        //   fs.unlink(
-        //     path.join(__dirname, "../uploads", req.file.filename),
-        //     (err) => {
-        //       if (err) console.error(err);
-        //     }
-        //   );
-        // }
         return res.status(400).json({ errors: result.error.details });
       }
       next();

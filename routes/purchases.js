@@ -5,7 +5,7 @@ const Product = require("../models/product");
 const verify = require("../middleware/auth");
 const Op = require("sequelize");
 const { sequelize } = require("../startup/db");
-const baseUrl = `http://localhost:${process.env.PORT}/`;
+const formatProductData = require("../utils/urlHandler");
 
 router.route("/find").get(verify, async (req, res) => {
   const id = req.user.id;
@@ -21,10 +21,7 @@ router.route("/find").get(verify, async (req, res) => {
       return res
         .status(400)
         .json({ message: "No products available for purchase" });
-    const productData = products.map((product) => ({
-      ...product.toJSON(),
-      displayPicture: `${baseUrl}${product.displayPicture}`,
-    }));
+    const productData = products.map(formatProductData);
     return res.status(200).json(productData);
   } catch (err) {
     return res.status(500).send("Error occured: " + err);
@@ -75,10 +72,7 @@ router.route("/buy/:id").post(verify, async (req, res) => {
         { transaction }
       );
       await transaction.commit();
-      const purchaseData = {
-        ...purchase.toJSON(),
-        displayPicture: `${baseUrl}${path}`,
-      };
+      const purchaseData = formatProductData(purchase);
       return res.status(201).json(purchaseData);
     } catch (err) {
       await transaction.rollback();
@@ -97,12 +91,9 @@ router.route("/buy/:id").post(verify, async (req, res) => {
 router.route("/records").get(verify, async (req, res) => {
   const id = req.user.id;
   const records = await Purchase.findAll({ where: { userId: id } });
-  if (!records)
-    res.status(400).json({ message: "User purchase records are empty" });
-  const recordData = records.map((record) => ({
-    ...record.toJSON(),
-    displayPicture: `${baseUrl}${record.displayPicture}`,
-  }));
+  if (!records || records.length === 0) return res.status(400).json({ message: "User purchase records are empty" });
+  const recordData = records.map(formatProductData);
   return res.status(200).json(recordData);
 });
+
 module.exports = router;

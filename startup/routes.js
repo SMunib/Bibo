@@ -1,13 +1,17 @@
-const express = require('express');
-const login = require('../routes/login');
-const signup = require('../routes/signup');
-const product = require('../routes/product');
-const purchase = require('../routes/purchases');
+const express = require("express");
+const login = require("../routes/login");
+const signup = require("../routes/signup");
+const product = require("../routes/product");
+const purchase = require("../routes/purchases");
+const renders = require("../routes/renders");
+const verifyOtp = require('../routes/verifyOtp');
 
-module.exports = function(app) {
-    app.use(express.json());
-    app.use('/api/login',login);
-    app.use('/api/signup',signup);
-    app.use('/api/product',product);
-    app.use('/api/purchase',purchase);
-}
+module.exports = function (app) {
+  app.use(express.json());
+  app.use("/api/login", login);
+  app.use("/api/signup", signup);
+  app.use("/api/product", product);
+  app.use("/api/purchase", purchase);
+  app.use("/api/verifyotp",verifyOtp);
+  app.use("/", renders);
+};
