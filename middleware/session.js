@@ -1,11 +1,9 @@
-// sessionConfig.js
-
 const session = require('express-session');
 const flash = require('express-flash');
 const dotenv = require('dotenv');
 dotenv.config();
 
-function configureSession(app) {
+async function configureSession(app) {
     app.use(
         session({
             secret: process.env.jwtSecretKey,

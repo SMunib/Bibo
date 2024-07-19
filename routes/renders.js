@@ -34,11 +34,15 @@ router.route("/home").get(async (req, res) => {
 router.route("/signup").get(async (req, res) => {
   res.render("signup");
 });
-router.route("/otpverify").get(async (req, res) => {
-  res.render("otpverify");
-});
 router.route("/forgetpassword").get(async (req, res) => {
   res.render("forgetpassword");
+});
+router.route("/verifyotp/:id").get(async (req, res) => {
+  const userId = req.params.id;
+  res.render("otpverify", { userId });
+});
+router.route("/verifyotp").get(async (req, res) => {
+  res.render("otpverifypass");
 });
 
 module.exports = router;

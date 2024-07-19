@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../startup/db');
 
-
 const Product = sequelize.define('Product', {
     name: {
         type: DataTypes.STRING,
@@ -35,7 +34,11 @@ const Product = sequelize.define('Product', {
         type: DataTypes.DATE,
         defaultValue: null,
         allowNull: true
-    }
+    },
+    isBlocked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 });
 
 module.exports = Product

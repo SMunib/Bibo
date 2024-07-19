@@ -21,23 +21,30 @@ router.route("/").post(async (req, res) => {
       },
     });
     if (!user) {
-      res.flash("error","Email or phone number does not exist");
+      req.flash("error", "Email or phone number does not exist");
       return res.redirect("back");
     }
 
     const validPass = await bcrypt.compare(req.body.password, user.password);
     if (!validPass) {
-      res.flash("error","Passwords do not match ");
+      res.flash("error", "Passwords do not match ");
       return res.redirect("back");
+    }
+
+    if (user.verified === false) {
+      req.flash(
+        "error",
+        "Complete account verification before logging in......"
+      );
+      return res.redirect("otpverify");
     }
 
     const token = await user.generateToken();
     res.header("x-auth-token", token).send(_.pick(user, ["id", "companyName"]));
-    res.flash("success","Log-in Successful!");
+    req.flash("success", "Log-in Successful!");
     return res.redirect("home");
   } catch (err) {
-    
-    res.flash("error","unexpected error!" +err);
+    req.flash("error", "unexpected error!" + err);
     return res.redirect("back");
   }
 });
@@ -61,7 +68,7 @@ router.route("/changePassword").post(verify, async (req, res) => {
 
   const updation = await user.update({ password: hashedpassword });
   if (!updation) return res.status(400).send("Updation has failed");
-  res.flash("success", "Password Changed Successfully!");
+  req.flash("success", "Password Changed Successfully!");
   return res.redirect("back");
 });
 

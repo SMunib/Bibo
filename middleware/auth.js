@@ -12,7 +12,7 @@ async function verifyToken(req, res, next) {
     req.user = decoded;
     next();
   } catch (ex) {
-    res.status(400).send("Invalid Token");
+    res.status(404).send("Invalid Token");
   }
 }
 

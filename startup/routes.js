@@ -5,6 +5,7 @@ const product = require("../routes/product");
 const purchase = require("../routes/purchases");
 const renders = require("../routes/renders");
 const verifyOtp = require('../routes/verifyOtp');
+const admin = require('../routes/admin');
 
 module.exports = function (app) {
   app.use(express.json());
@@ -13,5 +14,6 @@ module.exports = function (app) {
   app.use("/api/product", product);
   app.use("/api/purchase", purchase);
   app.use("/api/verifyotp",verifyOtp);
+  app.use("/api/admin",admin);
   app.use("/", renders);
 };

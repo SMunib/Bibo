@@ -19,7 +19,7 @@
         <% }) %>
       </div>
       <% } %>
-      <form action="/api/verifyOtp/<%= userId %>" method="POST" class="mt-4">
+      <form action="/api/verifyOtp" method="POST" class="mt-4" id="otpForm">
         <div class="form-group">
           <label for="otp">Enter OTP</label>
           <input
@@ -30,11 +30,24 @@
             required
           />
         </div>
+        <input type="hidden" id="otpToken" name="otpToken" />
         <button type="submit" class="btn btn-primary btn-block">
           Verify OTP
         </button>
       </form>
     </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Retrieve the token from the response headers
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('x-auth-token='))
+          ?.split('=')[1];
+        if (token) {
+          document.getElementById('otpToken').value = token;
+        }
+      });
+    </script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

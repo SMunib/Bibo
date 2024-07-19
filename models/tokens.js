@@ -7,7 +7,7 @@ const Token = sequelize.define("Token", {
     allowNull: true,
   },
   keyType: {
-    type: DataTypes.ENUM("access", "reset"),
+    type: DataTypes.ENUM("access", "reset", "resetmobile"),
     allowNull: true,
   },
 });

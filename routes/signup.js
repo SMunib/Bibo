@@ -7,14 +7,20 @@ const Token = require("../models/tokens");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const _ = require("lodash");
-const generateOtp = require('../utils/generateOtp');
+const generateOtp = require("../utils/generateOtp");
 const { sequelize } = require("../startup/db");
 const { transporter } = require("../utils/mailer");
-
+const Otp = require("../models/otp");
 
 router.route("/").post(async (req, res) => {
+  const formData = req.body;
   const { error } = await validate(req.body);
-  if (error) return res.status(400).send(error);
+  if (error) {
+    // req.flash("error", error);
+    // req.flash("formData", formData);
+    // return res.redirect("back");
+    return res.status(400).send(error);
+  }
   const { email, password, confirmPassword, ...otherData } = req.body;
 
   try {
@@ -27,26 +33,48 @@ router.route("/").post(async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedpassword = await bcrypt.hash(password, salt);
 
-    delete req.session.otp;
-    delete req.session.expirationTime; 
-
-    const {otp, expirationTime} = generateOtp();
-
-    req.session.signupDetails = {password:hashedpassword,...otherData};
-    req.session.otp = otp;
-    req.session.email = email;
-    req.session.otpExpiration = expirationTime;
-
-    // console.log(req.session.signupDetails);
-    return res.status(201).send(otp);
+    const { otp, expirationTime } = generateOtp();
+    const transaction = await sequelize.transaction();
+    try {
+      const user = await User.create(
+        {
+          email,
+          password: hashedpassword,
+          ...otherData,
+        },
+        { transaction }
+      );
+      const newOtp = await Otp.create(
+        {
+          otp: otp,
+          expiresAt: expirationTime,
+          userId: user.id,
+        },
+        { transaction }
+      );
+      if (!user) {
+        await transaction.rollback();
+        return res.status(400).json({ message: "Account creation failed" });
+      }
+      if (!newOtp) {
+        await transaction.rollback();
+        return res.status(400).json({ message: "Otp generation failed" });
+      }
+      await transaction.commit();
+      const link = `http://localhost:3000/verifyotp/${user.id}`;
+      return res.status(200).json({ link, otp });
+      // return res.render('signupsuccess', {link});
+    } catch (err) {
+      await transaction.rollback();
+      return res.status(500).json("Transaction failed");
+    }
   } catch (err) {
-    res.status(500).send(err.message);
+    return res.status(500).send(err.message);
   }
 });
 
 router.route("/forgetpassword").post(async (req, res) => {
   const { email } = req.body;
-
   try {
     const user = await User.findOne({
       where: {
@@ -112,6 +140,62 @@ router.route("/forgetpassword").post(async (req, res) => {
     return res
       .status(500)
       .send({ message: "Password Reset has failed", success: false });
+  }
+});
+
+router.route("/forgetpasswordmobile").post(async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    });
+    if (!user) return res.status(400).send("User not found");
+    const secret = process.env.jwtSecretKey;
+    const payload = {
+      email: user.email,
+      id: user.id,
+    };
+    const token = jwt.sign(payload, secret, { expiresIn: "15m" });
+    const { otp, expirationTime } = generateOtp();
+    const transaction = await sequelize.transaction();
+    try {
+      await Token.destroy(
+        {
+          where: {
+            userId: user.id,
+          },
+        },
+        transaction
+      );
+
+      await Token.create(
+        {
+          key: token,
+          userId: user.id,
+          keyType: "resetmobile",
+        },
+        transaction
+      );
+      const newOtp = await Otp.create(
+        {
+          otp: otp,
+          expiresAt: expirationTime,
+          userId: user.id,
+        },
+        { transaction }
+      );
+      await transaction.commit();
+      res.header("x-auth-token", token);
+      return res.json({ token, otp });
+    } catch (err) {
+      await transaction.rollback();
+      console.log(err);
+      return res.status(400).send("Error" + err);
+    }
+  } catch (err) {
+    return res.status(500).send("error" + err);
   }
 });
 

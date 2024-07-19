@@ -14,6 +14,7 @@ async function validateUser(user) {
     address: Joi.string().required(),
     einNumber: Joi.string().required(),
     storeCategory: Joi.string().required(),
+    role: Joi.string().required(),
   });
   try {
     await userSchema.validateAsync(user, { abortEarly: false });
