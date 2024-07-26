@@ -3,6 +3,8 @@ const User = require("../models/user");
 const Token = require("../models/tokens");
 const Purchase = require("../models/purchases");
 const Otp = require("../models/otp");
+const ChatRoom = require("../models/ChatRoom");
+const Messages = require("../models/messages");
 
 const defineAssociations = async () => {
   Product.belongsTo(User, {
@@ -48,6 +50,40 @@ const defineAssociations = async () => {
   Otp.belongsTo(User, {
     foreignKey: "userId",
     targetKey: "id",
+    as: "user",
+  });
+
+  ChatRoom.hasMany(Messages, {
+    foreignKey: "chatRoomId",
+    as: "messages",
+  });
+
+  Messages.belongsTo(ChatRoom, {
+    foreignKey: "chatRoomId",
+    as: "chatRoom",
+  });
+
+  User.belongsToMany(ChatRoom, {
+    through: "UserChatRoom",
+    foreignKey: "userId",
+    otherKey: "chatRoomId",
+    as: "chatrooms",
+  });
+
+  ChatRoom.belongsToMany(User, {
+    through: "UserChatRoom",
+    foreignKey: "chatRoomId",
+    otherKey: "userId",
+    as: "users",
+  });
+
+  User.hasMany(Messages, {
+    foreignKey: "userId",
+    as: "messages",
+  });
+
+  Messages.belongsTo(User, {
+    foreignKey: "userId",
     as: "user",
   });
 };

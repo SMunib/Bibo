@@ -28,8 +28,9 @@ router.route("/:id").post(async (req, res) => {
       const updated = await user.update({ accountVerified: true });
       if (!updated)
         return res.status(400).send("Account could not be verified");
-      req.flash("success", "Account Verified");
-      return res.redirect("/");
+      // req.flash("success", "Account Verified");
+      // return res.redirect("/");
+      return res.status(200).json({message:"success"});
     } else {
       return res.status(400).json({ message: "Error validating OTP" });
     }

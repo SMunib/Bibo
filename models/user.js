@@ -72,7 +72,7 @@ const User = sequelize.define("User", {
 User.prototype.generateToken = async function () {
   await Token.destroy({ where: { userId: this.id } });
   const jwtkey = process.env.jwtSecretKey;
-  const token = jwt.sign({ id: this.id, role: this.role }, jwtkey, {
+  const token = jwt.sign({ id: this.id, role: this.role ,companyName: this.companyName}, jwtkey, {
     expiresIn: "1h",
   });
   await Token.create({ key: token, userId: this.id, keyType: "access" });

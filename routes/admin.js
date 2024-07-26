@@ -1,13 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/user");
-const Token = require("../models/tokens");
-const Product = require("../models/product");
 const validate = require("../validators/login").validate;
 const bcrypt = require("bcrypt");
-const Purchase = require("../models/purchases");
+const { Op } = require("sequelize");
 
 router.route("/").post(async (req, res) => {
+  const { User, Token } = req.models;
   try {
     const { error } = await validate(req.body);
     if (error) return res.status(400).send(error);
@@ -20,20 +18,14 @@ router.route("/").post(async (req, res) => {
       },
     });
     if (!user) {
-      // req.flash("error","Email or phone number does not exist");
-      // return res.redirect("back");
       return res.status(404).send("User not found");
     }
 
     const validPass = await bcrypt.compare(req.body.password, user.password);
     if (!validPass) {
-      // res.flash("error","Passwords do not match ");
-      // return res.redirect("back");
       return res.status(400).send("Passwords do not match");
     }
     if (user.role !== "admin") {
-      // req.flash("error","Complete account verification before logging in......");
-      // return res.redirect("otpverify");
       return res
         .status(401)
         .send("Warning!Do not have priveleges to access this page");
@@ -46,17 +38,14 @@ router.route("/").post(async (req, res) => {
       keyType: "access",
     });
     return res.header("x-auth-token", token).status(200).json({ user, token });
-    // req.flash("success", "Log-in Successful!");
-    // return res.redirect("home");
   } catch (err) {
-    // req.flash("error","unexpected error!" +err);
-    // return res.redirect("back");
     return res.status(500).send("Error" + err);
   }
 });
 
 router.route("/forgetpassword").post(async (req, res) => {
   const { email } = req.body;
+  const { User, Token } = req.models;
   try {
     const user = await User.findOne({
       where: {
@@ -127,6 +116,7 @@ router.route("/forgetpassword").post(async (req, res) => {
 });
 
 router.route("/productCount").get(async (req, res) => {
+  const { Product } = req.models;
   const productCount = await Product.count();
   if (!productCount)
     return res.status(404).json({ message: "Product list is empty" });
@@ -134,6 +124,7 @@ router.route("/productCount").get(async (req, res) => {
 });
 
 router.route("/purchaseCount").get(async (req, res) => {
+  const { Purchase } = req.models;
   const purchaseCount = await Purchase.count();
   if (!purchaseCount)
     return res.status(404).json({ message: "Purchase list is empty" });
@@ -141,6 +132,7 @@ router.route("/purchaseCount").get(async (req, res) => {
 });
 
 router.route("/productDetails").get(async (req, res) => {
+  const { Product, User } = req.models;
   try {
     const products = await Product.findAll({
       include: {
@@ -159,6 +151,7 @@ router.route("/productDetails").get(async (req, res) => {
 });
 
 router.route("/users").get(async (req, res) => {
+  const { User } = req.models;
   try {
     const users = await User.findAll();
     if (!users) return res.status(404).json({ error: "users not found" });
@@ -170,6 +163,7 @@ router.route("/users").get(async (req, res) => {
 
 router.route("/users/:userId/purchases").get(async (req, res) => {
   const userId = req.params.id;
+  const { User, Purchase } = req.models;
   try {
     const user = await User.findByPk(userId, {
       include: {
@@ -188,6 +182,7 @@ router.route("/users/:userId/purchases").get(async (req, res) => {
 
 router.route("/blockUser/:id").post(async (req, res) => {
   const userId = req.params.id;
+  const { User } = req.models;
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -199,6 +194,7 @@ router.route("/blockUser/:id").post(async (req, res) => {
 });
 
 router.route("blockProduct/:id").post(async (req, res) => {
+  const { Product } = req.models;
   const id = req.params.id;
   try {
     const product = await Product.findByPk(id);

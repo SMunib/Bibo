@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const validate = require("../validators/login").validate;
-const User = require("../models/user");
 const _ = require("lodash");
 const { Op } = require("sequelize");
 const verify = require("../middleware/auth");
@@ -10,6 +9,7 @@ const validPass = require("../validators/password");
 
 router.route("/").post(async (req, res) => {
   try {
+    const { User } = req.models;
     const { error } = await validate(req.body);
     if (error) return res.status(400).send(error);
     let user = await User.findOne({
@@ -21,8 +21,9 @@ router.route("/").post(async (req, res) => {
       },
     });
     if (!user) {
-      req.flash("error", "Email or phone number does not exist");
-      return res.redirect("back");
+      // req.flash("error", "Email or phone number does not exist");
+      // return res.redirect("back");
+      return res.status(400).send("user does not exist");
     }
 
     const validPass = await bcrypt.compare(req.body.password, user.password);
@@ -40,9 +41,9 @@ router.route("/").post(async (req, res) => {
     }
 
     const token = await user.generateToken();
-    res.header("x-auth-token", token).send(_.pick(user, ["id", "companyName"]));
-    req.flash("success", "Log-in Successful!");
-    return res.redirect("home");
+    res
+      .header("x-auth-token", token)
+      .send({ token, user: _.pick(user, ["id", "companyName"]) });
   } catch (err) {
     req.flash("error", "unexpected error!" + err);
     return res.redirect("back");

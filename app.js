@@ -1,41 +1,43 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
 const multer = require("multer");
 const upload = multer();
+const http = require("http");
+const socketIo = require("socket.io");
 const flash = require("express-flash");
-const app = express();
-dotenv.config();
-
-const defineAssociations = require("./connect/Association");
-const { sequelize, syncDB, testConnection } = require("./startup/db");
-const configureSession = require("./middleware/session");
+const authSocket = require("./middleware/authSocket");
 const setupRoutes = require("./startup/routes");
+const { initializeDB } = require("./startup/start");
+const models = require("./models/index");
+const setupSocketRoutes = require("./chatRoutes/index");
 
-const User = require("./models/user");
-const Product = require("./models/product");
-const Token = require("./models/tokens");
-const Purchase = require("./models/purchases");
-const Otp = require("./models/otp");
+const app = express();
 
 async function initialize() {
   try {
-    await testConnection();
-    await defineAssociations();
-    await syncDB();
+    await initializeDB();
+
+    const server = http.createServer(app);
+    const io = socketIo(server);
+
+    io.use(authSocket); // Use the authentication middleware
 
     app.use(express.json());
-    // app.use(express.cookieParser());
     app.use(express.urlencoded({ extended: true }));
     app.use(upload.any());
     app.use("/uploads", express.static("uploads"));
     app.use("/logos", express.static("logos"));
+    app.set("models", models);
     app.set("view engine", "ejs");
 
-    configureSession(app);
     setupRoutes(app);
+    await setupSocketRoutes(io);
 
-    const port = process.env.PORT || 3000;
-    app.listen(port, () => console.log(`server is running on port: ${port}`));
+    const port = 3001;
+    server.listen(port, () =>
+      console.log(`Server is running on port: ${port}`)
+    );
   } catch (err) {
     console.log("Failed to initialize: ", err);
     process.exit(1);
